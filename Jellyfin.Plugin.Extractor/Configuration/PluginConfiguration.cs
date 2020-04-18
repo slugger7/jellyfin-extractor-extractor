@@ -1,6 +1,6 @@
 using MediaBrowser.Model.Plugins;
 
-namespace Jellyfin.Plugin.Template.Configuration
+namespace Jellyfin.Plugin.Extractor.Configuration
 {
     public enum SomeOptions
     {
