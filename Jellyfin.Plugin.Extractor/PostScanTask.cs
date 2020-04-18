@@ -33,33 +33,41 @@ namespace Jellyfin.Plugin.Extractor
     private void addGenresToMovie(BaseItem movie, IEnumerable<string> genres)
     {
       foreach (var genre in genres)
+      {
+        if (!movie.Genres.Contains(genre))
         {
-            if (!movie.Genres.Contains(genre))
-            {
-              movie.AddGenre(genre);
-            }
+          movie.AddGenre(genre);
         }
+      }
     }
 
-    public Task Run(IProgress<double> progress, CancellationToken cancellationToken)
+    private void updateMovie(BaseItem movie, CancellationToken token)
+    {
+      var genres = extractGenres(movie.Name);
+      var existingGenres = movie.Genres;
+
+      addGenresToMovie(movie, genres);
+
+      movie.Name = removeGenresFromMovie(movie.Name);
+
+      movie.UpdateToRepository(ItemUpdateType.MetadataEdit, token);
+    }
+
+    private IEnumerable<BaseItem> getMovies() => libraryManager.GetItemList(new InternalItemsQuery()
+    {
+      IncludeItemTypes = new string[] { "movie" }
+    });
+
+    public Task Run(IProgress<double> progress,
+                    CancellationToken cancellationToken)
     {
       logger.LogInformation("Running extraction task post library scan");
 
-      var movies = libraryManager.GetItemList(new MediaBrowser.Controller.Entities.InternalItemsQuery()
-      {
-        IncludeItemTypes = new string[] { "movie" }
-      });
+      var movies = getMovies();
 
       foreach (var movie in movies)
       {
-        var genres = extractGenres(movie.Name);
-        var existingGenres = movie.Genres;
-
-        addGenresToMovie(movie, genres);
-
-        movie.Name = removeGenresFromMovie(movie.Name);
-
-        movie.UpdateToRepository(ItemUpdateType.MetadataEdit, cancellationToken);
+        updateMovie(movie, cancellationToken);
       }
 
       logger.LogInformation("Running extraction complete");
