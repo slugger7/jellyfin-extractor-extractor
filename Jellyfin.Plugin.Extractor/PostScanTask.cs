@@ -5,14 +5,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.Extractor
 {
-  public class PostScanTask : ILibraryPostScanTask
+  public class PostScanTask : IScheduledTask
   {
     private ILibraryManager libraryManager;
     private ILogger logger;
+
+    public string Name => "Run Extractor";
+
+    public string Key => "1a060367-6322-42c7-a9ec-825c17f8ceff";
+
+    public string Description => "Run the extractor method";
+
+    public string Category => "Plugin";
+
     public PostScanTask(ILibraryManager libraryManager, ILogger logger)
     {
       this.libraryManager = libraryManager;
@@ -21,14 +32,26 @@ namespace Jellyfin.Plugin.Extractor
 
     private IEnumerable<string> extractGenres(string movieName)
     {
-      int openIndex = movieName.LastIndexOf("(");
-      int closedIndex = movieName.LastIndexOf(")");
-      var genres = movieName
+      int openIndex = movieName.IndexOf("(");
+      int closedIndex = movieName.IndexOf(")");
+      if (openIndex > 0 && closedIndex > 0)
+      {
+        return movieName
         .Substring(openIndex + 1, closedIndex - openIndex - 1).Split(',').Select(genre => genre.Trim());
-      return genres;
+      }
+
+      return new List<string>();
     }
 
-    private string removeGenresFromMovie(string movieName) => movieName.Substring(0, movieName.LastIndexOf(" ("));
+    private string removeGenresFromMovie(string movieName)
+    {
+      var openIndex = movieName.LastIndexOf(" (");
+      if (openIndex > 0)
+      {
+        movieName = movieName.Substring(0, openIndex);
+      }
+      return movieName;
+    }
 
     private void addGenresToMovie(BaseItem movie, IEnumerable<string> genres)
     {
@@ -55,11 +78,10 @@ namespace Jellyfin.Plugin.Extractor
 
     private IEnumerable<BaseItem> getMovies() => libraryManager.GetItemList(new InternalItemsQuery()
     {
-      IncludeItemTypes = new string[] { "movie" }
+      VideoTypes = new VideoType[] { VideoType.VideoFile }
     });
 
-    public Task Run(IProgress<double> progress,
-                    CancellationToken cancellationToken)
+    public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
     {
       logger.LogInformation("Running extraction task post library scan");
 
@@ -72,6 +94,12 @@ namespace Jellyfin.Plugin.Extractor
 
       logger.LogInformation("Running extraction complete");
       return Task.CompletedTask;
+    }
+
+    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    {
+      IEnumerable<TaskTriggerInfo> enumerable = new List<TaskTriggerInfo>();
+      return enumerable;
     }
   }
 }
