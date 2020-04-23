@@ -2,7 +2,7 @@ using Xunit;
 using Jellyfin.Plugin.Extractor.Services;
 using System.Collections.Generic;
 
-namespace Jellyfin.Plugin.Extractor.Tests
+namespace Jellyfin.Plugin.Extractor.Tests.Services
 {
   public class GenreExtractorServiceTests
   {
@@ -38,43 +38,68 @@ namespace Jellyfin.Plugin.Extractor.Tests
       Assert.Equal(new List<string>() { "genre" }, genres);
     }
 
-    [Fact]
-    public void extractGenres_ShouldReturnGenres()
+    [Theory]
+    [InlineData("Moviename - actor - (genre, genre)")]
+    [InlineData("(genre, genre) Movie - actor")]
+    [InlineData("Movie (genre, genre) - actor")]
+    public void extractGenres_ShouldReturnGenres(string movie)
     {
-      //Given
-      var movie = "Moviename - actor - (genre, genre2)";
-
       //When
       var genres = genreExtractorService.extractGenres(movie);
 
       //Then
-      Assert.Equal(new List<string>() { "genre", "genre2" }, genres);
+      Assert.Equal(new List<string>() { "genre", "genre" }, genres);
     }
 
     [Fact]
     public void removeGenresFromMovieName_ShouldReturnMovieWithNoAlterations()
     {
-    //Given
-    var movie = "MovieName - actor";
-    
-    //When
-    var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
+      //Given
+      var movie = "MovieName - actor";
 
-    //Then
-    Assert.Equal(movie, updatedMovie);
+      //When
+      var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
+
+      //Then
+      Assert.Equal(movie, updatedMovie);
     }
 
     [Fact]
-    public void removeGenresFromMovieName_ShouldReturnAMovieWithoutGenres()
+    public void removeGenresFromMovieName_ShouldReturnAMovieWithoutGenres_WhenGenresAtEnd()
     {
-    //Given
-    var movie = "MovieName - actor (genre1, genre3)";
-    
-    //When
-    var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
-    
-    //Then
-    Assert.Equal("MovieName - actor", updatedMovie);
+      //Given
+      var movie = "MovieName - actor (genre1, genre3)";
+
+      //When
+      var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
+
+      //Then
+      Assert.Equal("MovieName - actor", updatedMovie);
+    }
+
+    [Fact]
+    public void removeGenresFromMovieName_ShouldReturnAMovieWithoutGenres_WhenGenresAtMiddle()
+    {
+      //Given
+      var movie = "MovieName (genre1, genre3) actor";
+
+      //When
+      var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
+
+      //Then
+      Assert.Equal("MovieName actor", updatedMovie);
+    }
+
+    [Fact]
+    public void removeGenresFromMovieName_ShouldReturnAMovieWithoutGenres_WhenGenresAtStart()    {
+      //Given
+      var movie = "(genre1, genre3) MovieName - actor";
+
+      //When
+      var updatedMovie = genreExtractorService.removeGenresFromMovie(movie);
+
+      //Then
+      Assert.Equal("MovieName - actor", updatedMovie);
     }
   }
 }
