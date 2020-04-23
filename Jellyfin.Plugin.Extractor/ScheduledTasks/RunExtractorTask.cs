@@ -10,13 +10,14 @@ using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Plugin.Extractor.Services;
 
-namespace Jellyfin.Plugin.Extractor
+namespace Jellyfin.Plugin.Extractor.ScheduledTasks
 {
   public class RunExtractorTask : IScheduledTask
   {
     private ILibraryManager libraryManager;
     private ILogger logger;
     private IGenreExtractorService genreExtractorService;
+    private IStudioExtractorService studioExtractorService;
 
     public string Name => "Run Extractor";
 
@@ -31,10 +32,12 @@ namespace Jellyfin.Plugin.Extractor
       this.libraryManager = libraryManager;
       this.logger = logger;
       this.genreExtractorService = new GenreExtractorService();
+      this.studioExtractorService = new StudioExtractorService();
     }
 
-    private void addGenresToMovie(BaseItem movie, IEnumerable<string> genres)
+    public void addGenresToMovie(BaseItem movie)
     {
+      var genres = genreExtractorService.extractGenres(movie.Name);
       foreach (var genre in genres)
       {
         if (!movie.Genres.Contains(genre))
@@ -42,16 +45,25 @@ namespace Jellyfin.Plugin.Extractor
           movie.AddGenre(genre);
         }
       }
-    }
-
-    private void updateMovie(BaseItem movie, CancellationToken token)
-    {
-      var genres = genreExtractorService.extractGenres(movie.Name);
-      var existingGenres = movie.Genres;
-
-      addGenresToMovie(movie, genres);
 
       movie.Name = genreExtractorService.removeGenresFromMovie(movie.Name);
+    }
+
+    public void addStudioToMovie(BaseItem movie)
+    {
+      var movieName = movie.Name;
+      var studio = studioExtractorService.extractStudio(movieName);
+      if (!String.IsNullOrWhiteSpace(studio))
+      {
+        movie.AddStudio(studio);
+      }
+      movie.Name = studioExtractorService.removeSurroundingBraces(movieName);
+    }
+
+    public void updateMovie(BaseItem movie, CancellationToken token)
+    {
+      addGenresToMovie(movie);
+      addStudioToMovie(movie);
 
       movie.UpdateToRepository(ItemUpdateType.MetadataEdit, token);
     }
