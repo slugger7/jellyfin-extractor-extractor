@@ -29,7 +29,9 @@ namespace Jellyfin.Plugin.Extractor.Services
       if (openIndex >= 0 && closedIndex > 0)
       {
         return movieName
-        .Substring(openIndex + 1, closedIndex - openIndex - 1).Split(genreDelimiter).Select(genre => genre.Trim());
+          .Substring(openIndex + 1, closedIndex - openIndex - 1)
+          .Split(genreDelimiter)
+          .Select(genre => genre.Trim());
       }
 
       return new List<string>();
@@ -39,12 +41,14 @@ namespace Jellyfin.Plugin.Extractor.Services
     {
       var openIndex = movieName.IndexOf(genreOpenChar);
       var closedIndex = movieName.IndexOf(genreClosingChar);
+
       if (openIndex >= 0 && closedIndex > 0)
       {
         var before = movieName.Substring(0, openIndex).Trim();
         var after = movieName.Substring(closedIndex + 1).Trim();
         movieName = $"{before} {after}".Trim();
       }
+      
       return movieName;
     }
   }
