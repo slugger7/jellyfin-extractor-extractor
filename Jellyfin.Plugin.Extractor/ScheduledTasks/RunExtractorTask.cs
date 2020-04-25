@@ -18,6 +18,7 @@ namespace Jellyfin.Plugin.Extractor.ScheduledTasks
     private ILogger logger;
     private IGenreExtractorService genreExtractorService;
     private IStudioExtractorService studioExtractorService;
+    private IPeopleExtractorService peopleExtractorService;
 
     public string Name => "Run Extractor";
 
@@ -33,6 +34,7 @@ namespace Jellyfin.Plugin.Extractor.ScheduledTasks
       this.logger = logger;
       this.genreExtractorService = new GenreExtractorService();
       this.studioExtractorService = new StudioExtractorService();
+      this.peopleExtractorService = new PeopleExtractorService();
     }
 
     public void addGenresToMovie(BaseItem movie)
@@ -60,8 +62,19 @@ namespace Jellyfin.Plugin.Extractor.ScheduledTasks
       movie.Name = studioExtractorService.removeSurroundingBraces(movieName);
     }
 
+    public void addPeopleToMovie(BaseItem movie)
+    {
+      var movieName = movie.Name;
+      var people = peopleExtractorService.extractPeople(movieName);
+
+      libraryManager.UpdatePeople(movie, people.Select(person => new PersonInfo() { Name = person }).ToList());
+
+      movie.Name = peopleExtractorService.removeSurroundingBraces(movieName);
+    }
+
     public void updateMovie(BaseItem movie, CancellationToken token)
     {
+      addPeopleToMovie(movie);
       addGenresToMovie(movie);
       addStudioToMovie(movie);
 
