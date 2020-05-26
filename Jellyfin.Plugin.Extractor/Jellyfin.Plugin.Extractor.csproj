@@ -8,15 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.5.*" />
-    <PackageReference Include="Jellyfin.Model" Version="10.5.*" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.*" />
+    <PackageReference Include="Jellyfin.Model" Version="10.*" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Configuration\configPage.html" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="Configuration\configPage.html" />
   </ItemGroup>
 
